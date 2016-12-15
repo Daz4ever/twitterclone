@@ -1,0 +1,20 @@
+{
+  "name": "twitterclone",
+  "version": "1.0.0",
+  "description": "twitter clone",
+  "main": "myangular.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "start": "node server.js"
+  },
+  "author": "dominic",
+  "license": "ISC",
+  "dependencies": {
+    "angular": "^1.6.0",
+    "bluebird": "^3.4.6",
+    "body-parser": "^1.15.2",
+    "express": "^4.14.0",
+    "mongoose": "^4.7.2",
+    "ui-router": "^1.0.0-alpha.3"
+  }
+}
