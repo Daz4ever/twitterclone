@@ -11,6 +11,8 @@
   "license": "ISC",
   "dependencies": {
     "angular": "^1.6.0",
+    "bcrypt": "^1.0.1",
+    "bcrypt-promise": "^2.0.0",
     "bluebird": "^3.4.6",
     "body-parser": "^1.15.2",
     "express": "^4.14.0",

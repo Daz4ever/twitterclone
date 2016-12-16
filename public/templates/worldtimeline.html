@@ -1,4 +1,6 @@
 <h1>World Timeline</h1>
 <ul ng-repeat="tweet in tweets">
-  <li>{{tweet}}</li>
+  <li>{{tweet.username}}</li>
+  <li>{{tweet.tweet}}</li>
+  <li>{{tweet.date | date: 'MM-dd-yyyy'}}</li>
 </ul>
