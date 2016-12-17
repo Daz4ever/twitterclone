@@ -1,13 +1,17 @@
+
+
+
+
 var app = angular.module('twitterclone', [
-  'ui.router', 'ngAnimate']);
+  'ui.router', 'ngAnimate', 'ngCookies']);
 
 app.config(function($stateProvider, $urlRouterProvider){
   $stateProvider
 
   .state({
-    name: 'index',
+    name: 'front',
     url: '/',
-    templateUrl: 'index.html'
+    templateUrl: 'front.html'
   })
   .state({
     name: 'signup',
@@ -35,47 +39,65 @@ app.config(function($stateProvider, $urlRouterProvider){
   })
   .state({
     name: 'profile',
-    url: '/profile',
+    url: '/profile/{username}',
     templateUrl: 'profile.html',
     controller: 'profileController'
   });
   $urlRouterProvider.otherwise('/');
 });
 
-app.factory('twitter', function factory($http, $rootScope) {
+app.factory('twitter', function factory($http, $rootScope, $cookies) {
   var service = {};
+  var userInfo = {};
 
-service.signup = function(userinfo) {
-  return $http ({
-    method: 'POST',
-    url: '/signup',
-    data: userinfo
-  });
-};
+  $rootScope.cookieData = null;
+  $rootScope.cookieData = $cookies.getObject('cookieData');
+  console.log("Printing initial cookie", $rootScope.cookieData);
+
+  if ($rootScope.factoryCookieData) {
+  $rootScope.auth = $rootScope.cookieData.token;
+  $rootScope.username = $rootScope.cookieData.username;
+  }
 
 
+  service.signup = function(userinfo) {
+    return $http ({
+      method: 'POST',
+      url: '/signup',
+      data: userinfo
+    });
+  };
 
-service.login = function(userdata) {
-  return $http ({
-    method: 'POST',
-    url: '/login',
-    data: userdata
-  });
-};
+  service.login = function(userdata) {
+    return $http ({
+      method: 'POST',
+      url: '/login',
+      data: userdata
+    });
+  };
 
-service.worldTimeLine = function() {
-  return $http ({
-    method: 'GET',
-    url: '/alltweets'
-  });
-};
-service.profile = function() {
-  return $http ({
-    method: 'GET',
-    url: '/profile'
-  });
-};
-return service;
+  service.worldTimeLine = function() {
+    return $http ({
+      method: 'GET',
+      url: '/alltweets'
+    });
+  };
+  service.profile = function(username) {
+    return $http ({
+      method: 'GET',
+      url: '/profile/' + username,
+    });
+  };
+
+  service.timeline = function() {
+    return $http ({
+      method: "GET",
+      url: '/timeline',
+      params: {token: $rootScope.auth}
+    });
+  };
+
+  return service;
 });
 
 app.controller('signupController', function($scope, twitter, $state){
@@ -104,7 +126,7 @@ app.controller('signupController', function($scope, twitter, $state){
 
 });
 
-app.controller('loginController', function($scope, twitter, $state) {
+app.controller('loginController', function($scope, twitter, $state, $cookies, $rootScope) {
 
 $scope.login = function(){
   loginInfo = {
@@ -118,6 +140,11 @@ $scope.login = function(){
   })
   .success(function(data){
     console.log(data);
+    $cookies.putObject('cookieData', data);
+    console.log("ADDED COOKIE");
+    $rootScope.user_info = data;
+    console.log('Hello', $rootScope.user_info);
+
     $state.go('worldtimeline');
   });
 };
@@ -131,13 +158,16 @@ app.controller('worldtimelineController', function($scope, twitter) {
   });
 });
 
-app.controller('profileController', function($scope, twitter) {
-  twitter.profile()
+app.controller('profileController', function($scope, twitter, $rootScope, $stateParams) {
+  $scope.someonesusername = $stateParams.username;
+
+  twitter.profile($scope.someonesusername)
   .success(function(data){
 
-    $scope.profile = data[0];
-    console.log($scope.profile);
+    $scope.profile = data[0][0];
+    console.log("HELLO:", $scope.profile);
     $scope.tweets = data[1];
+    console.log(data[1]);
     $scope.numberOfTweets = $scope.tweets.length;
   });
 });

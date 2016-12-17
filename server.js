@@ -4,6 +4,7 @@ const express = require('express');
 const bodyParser = require('body-parser');
 const app = express();
 const bcrypt = require('bcrypt');
+const uuidV1 = require('uuid/v1');
 
 app.use(express.static('public/templates'));
 app.use(bodyParser.json());
@@ -12,11 +13,15 @@ const ObjectId = mongoose.Schema.ObjectId;
 
 mongoose.connect('mongodb://localhost/twitterclone_db');
 
+var randomToken = uuidV1();
+
 const User = mongoose.model('User', {
  username: { type: String, required: true },
  password: { type: String, required: true },
- following: [ObjectId],
- followers: [ObjectId]
+ following: [String],
+ followers: [String],
+ token: String,
+ date: Date
 });
 
 const Tweet = mongoose.model('Tweet', {
@@ -25,6 +30,8 @@ const Tweet = mongoose.model('Tweet', {
  username: String,
  userId: ObjectId
 });
+
+
 
 
 
@@ -52,17 +59,20 @@ const Tweet = mongoose.model('Tweet', {
 
 app.post('/signup', function(request, response){
 var userdata = request.body;
+console.log(userdata);
   if(userdata.password === userdata.password2) {
     bcrypt.genSalt(10)
     .then(function(salt){
       return bcrypt.hash(request.body.password, salt);
     })
     .then(function(encryptedpass) {
+      console.log(encryptedpass);
       var newUser = new User({
         username: userdata.username,
         password: encryptedpass,
         following: [],
-        followers: []
+        followers: [],
+        token: String,
       });
       return newUser.save();
 
@@ -85,23 +95,26 @@ var userdata = request.body;
 app.post('/login', function(request, response) {
   var userdata = request.body;
   console.log("XXXXXXXXXX", userdata);
-  User.find({ username: userdata.username})
+  User.findOne({ username: userdata.username})
   .then(function(user){
     console.log(userdata.password);
-    console.log(user[0].password);
-    return bcrypt.compare(userdata.password, user[0].password);
-        // result === true or false
+    console.log(user.password);
+    return [user, bcrypt.compare(userdata.password, user.password)];
+        //bcrypt.compare === true or false
   })
-  .then(function(boolean, user) {
+  .spread(function(user, boolean) {
     if (boolean === true) {
       console.log("Login Success");
-      response.send(user);
+      user.token = randomToken;
+      return user.save();
     }
     else {
       console.log("Login Failed");
       response.send('failed');
-  }
-
+    }
+  })
+  .then(function(user) {
+    response.send(user);
   })
   .catch(function(err){
     console.log('OMG ERROR: ', err.message);
@@ -124,9 +137,10 @@ app.get('/alltweets', function(request, response) {
 
 // we want to grab all the data for profile including all the tweets for a specific
 // user and the details for a specific user(which includes followers and following)
-app.get('/profile', function(request, response) {
-  bluebird.all([Tweet.find({ userId: "5851b2bf69405053a9140e09"}),
-  User.findById("5851b2bf69405053a9140e09")
+app.get('/profile/:username', function(request, response) {
+  var username= request.params.username;
+  bluebird.all([Tweet.find({ username: username}).sort({date: -1}).limit(5),
+  User.find({username: username})
   ])
   .spread(function(tweets, user){
     console.log("tweets: ", tweets);
@@ -136,6 +150,27 @@ app.get('/profile', function(request, response) {
 
 
 });
+
+
+function auth(request, response, next) {
+  //verify auth token
+
+  var token = request.query.token;
+  User.find({token: token})
+  .then(function(user){
+    if(user.token === token) {
+
+      next();
+    } else {
+      response.status(401);
+      response.json({error: "you are not logged in"});
+    }
+
+
+});
+}
+
+app.use(auth);
 
 app.get('/timeline', function(request, response) {
 
