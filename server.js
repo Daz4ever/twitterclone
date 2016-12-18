@@ -189,10 +189,10 @@ app.get('/timeline', function(request, response) {
       });
     })
     .then(function(allTweets) {
-      console.log('ALL THE DAMN TWEETS::', allTweets);
+      console.log('ALL Tweets::', allTweets);
     })
     .catch(function(err) {
-      console.log('Error grabbing DOM and his following TWEETS::', err);
+      console.log('Error not grabbing all the tweets::', err);
     });
 
 });
